@@ -31,8 +31,25 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AutoMapper, Version=10.0.0.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\AutoMapper.10.1.1\lib\net461\AutoMapper.dll</HintPath>
+    </Reference>
+    <Reference Include="Concord.API.Future.Client">
+      <HintPath>..\..\..\..\..\..\..\..\CONCORDS\Concord.API.Future.Client 1.0.10\Concord.API.Future.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NLog.4.7.10\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -41,7 +58,78 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Brokages\BaseBrokage.cs" />
+    <Compile Include="Brokages\Capital\CapitalBrokage.cs" />
+    <Compile Include="Brokages\Capital\CapitalBrokage.OrderMaker.cs" />
+    <Compile Include="Brokages\Capital\CapitalBrokage.Receiver.cs" />
+    <Compile Include="Brokages\Capital\CapitalBrokage.SymbolMapper.cs" />
+    <Compile Include="Brokages\Capital\Helpers.cs" />
+    <Compile Include="Brokages\Concord\ConcordBrokage.cs" />
+    <Compile Include="Brokages\Concord\ConcordBrokage.OrderMaker.cs" />
+    <Compile Include="Brokages\Concord\ConcordBrokage.Receiver.cs" />
+    <Compile Include="Brokages\Fake\FakeBrokage.cs" />
+    <Compile Include="Brokages\Fake\FakeBrokage.OrderMaker.cs" />
+    <Compile Include="Brokages\Fake\FakeBrokage.Receiver.cs" />
+    <Compile Include="Brokages\Settings.cs" />
+    <Compile Include="Consts.cs" />
+    <Compile Include="DtoMapper\Config.cs" />
+    <Compile Include="EventArgs\ActionEventArgs.cs" />
+    <Compile Include="EventArgs\ConnectionStatusEventArgs.cs" />
+    <Compile Include="EventArgs\ExceptionEventArgs.cs" />
+    <Compile Include="Exceptions\Receiver\QuoteSource.cs" />
+    <Compile Include="Helpers\Extensions\CNHelpers.cs" />
+    <Compile Include="Helpers\Extensions\CommonHelpers.cs" />
+    <Compile Include="Helpers\Extensions\DateTimeHelpers.cs" />
+    <Compile Include="Helpers\Extensions\EnumHelpers.cs" />
+    <Compile Include="Helpers\Extensions\Id.cs" />
+    <Compile Include="Helpers\Extensions\InputHelpers.cs" />
+    <Compile Include="Helpers\Extensions\JoinHelpers.cs" />
+    <Compile Include="Helpers\Extensions\JsonHelpers.cs" />
+    <Compile Include="Helpers\Extensions\NLogger.cs" />
+    <Compile Include="Helpers\Extensions\RandomHelper.cs" />
+    <Compile Include="Helpers\Extensions\SIDHelper.cs" />
+    <Compile Include="Managers\SettingsManager.cs" />
+    <Compile Include="Managers\TimeManager.cs" />
+    <Compile Include="OrderMaker\BaseOrderMaker.cs" />
+    <Compile Include="OrderMaker\DtoMapper\TradeSettings.cs" />
+    <Compile Include="OrderMaker\EventArgs\AccountEventArgs.cs" />
+    <Compile Include="OrderMaker\EventArgs\PositionEventArgs.cs" />
+    <Compile Include="OrderMaker\IOrderMaker.cs" />
+    <Compile Include="OrderMaker\Managers\PositionManager.cs" />
+    <Compile Include="OrderMaker\Models\AccountSettings.cs" />
+    <Compile Include="OrderMaker\Models\Order.cs" />
+    <Compile Include="OrderMaker\Models\PositionFile.cs" />
+    <Compile Include="OrderMaker\Models\TradeSettings.cs" />
+    <Compile Include="OrderMaker\Settings.cs" />
+    <Compile Include="OrderMaker\ViewServices\AccountViewService.cs" />
+    <Compile Include="OrderMaker\ViewServices\TradeSettingsViewService.cs" />
+    <Compile Include="OrderMaker\Views\AccountViewModel.cs" />
+    <Compile Include="OrderMaker\Views\DealViewModel.cs" />
+    <Compile Include="OrderMaker\Views\PositionViewModel.cs" />
+    <Compile Include="OrderMaker\Views\TradeSettingsViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Receiver\EventArgs\TickEventArgs.cs" />
+    <Compile Include="Receiver\IQuoteSource.cs" />
+    <Compile Include="Receiver\Services\Futures.cs" />
+    <Compile Include="Receiver\Settings.cs" />
+    <Compile Include="Receiver\ViewServices\Ticks.cs" />
+    <Compile Include="Receiver\Views\QuoteViewModel.cs" />
+    <Compile Include="Receiver\Views\TickViewModel.cs" />
+    <Compile Include="Security\CryptoGraphy.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="SKCOMLib">
+      <Guid>{75AAD71C-8F4F-4F1F-9AEE-3D41A8C9BA5E}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
