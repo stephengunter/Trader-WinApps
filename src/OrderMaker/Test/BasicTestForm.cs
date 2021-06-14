@@ -20,10 +20,12 @@ namespace OrderMaker.Test
 {
     public partial class BasicTestForm : Form
     {
-        private static readonly NLog.ILogger _logger = LogManager.GetCurrentClassLogger();
-        private ISettingsManager _settingsManager;
+        private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
+        private ISettingsManager _settingsManager = Factories.CreateSettingsManager();
         private ITimeManager _timeManager;
         private IOrderMaker _orderMaker;
+
+        private bool _closed = false;
         public BasicTestForm()
         {
             _settingsManager = Factories.CreateSettingsManager();
@@ -36,7 +38,7 @@ namespace OrderMaker.Test
             CheckBasicSettings();
             if (_basicSettingOK)
             {
-                InitOrderMaker();
+                CreateOrderMaker();
             }
             else
             {
@@ -47,18 +49,18 @@ namespace OrderMaker.Test
             InitStatusUI();
         }
 
-        void InitOrderMaker()
+        void CreateOrderMaker()
         {
             string name = _settingsManager.GetSettingValue(AppSettingsKey.OrderMaker);
 
             _orderMaker = Factories.CreateOrderMaker(name, _settingsManager.BrokageSettings);
 
             _orderMaker.Ready += OnOrderMakerReady;
-            _orderMaker.ConnectionStatusChanged += OrderMaker_ConnectionStatusChanged;
+            _orderMaker.ConnectionStatusChanged += OnConnectionStatusChanged;
+            _orderMaker.ExceptionHappend += OnExceptionHappend;
+            _orderMaker.ActionExecuted += OnActionExecuted;
 
         }
-
-        bool _closed = false;
 
         #region  Helper
         bool _basicSettingOK = false;
@@ -82,9 +84,53 @@ namespace OrderMaker.Test
         #endregion
 
         #region Event Handlers
+        private void OnConnectionStatusChanged(object sender, EventArgs e)
+        {
+            if (_closed) return;
+
+            try
+            {
+                var args = e as ConnectionStatusEventArgs;
+                _logger.Info($"ConnectionStatusChanged: {args.Status}");
+
+                if (ucStatus == null) return;
+                if (args.Status != ConnectionStatus.CONNECTING) ucStatus.CheckConnect();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+
+            }
+        }
         private void OnOrderMakerReady(object sender, EventArgs e)
         {
             _logger.Info($"OrderMakerReady. Provider: {_orderMaker.Name}");
+        }
+        private void OnActionExecuted(object sender, EventArgs e)
+        {
+            try
+            {
+                var args = e as ActionEventArgs;
+                _logger.Info($"Action: {args.Action}, Code: {args.Code}, Msg: {args.Msg}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+            }
+        }
+        private void OnExceptionHappend(object sender, EventArgs e)
+        {
+            try
+            {
+                var args = e as ExceptionEventArgs;
+                _logger.Error(args.Exception);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+
+            }
         }
 
         private void OnEditConfig(object sender, EventArgs e)
@@ -106,24 +152,7 @@ namespace OrderMaker.Test
             Process.Start(psi);
         }
 
-        private void OrderMaker_ConnectionStatusChanged(object sender, EventArgs e)
-        {
-            if (_closed) return;
-
-            try
-            {
-
-                if (ucStatus == null) return;
-                var args = e as ConnectionStatusEventArgs;
-                if (args.Status != ConnectionStatus.CONNECTING) ucStatus.CheckConnect();
-
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex);
-
-            }
-        }
+        
 
 
         #endregion
@@ -173,11 +202,6 @@ namespace OrderMaker.Test
             if (_orderMaker != null) _orderMaker.DisConnect();
 
             Thread.Sleep(1500);
-        }
-
-        private void btnLogout_Click(object sender, EventArgs e)
-        {
-            if (_orderMaker != null) _orderMaker.DisConnect();
         }
 
 

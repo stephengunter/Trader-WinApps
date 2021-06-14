@@ -17,8 +17,10 @@ namespace ApplicationCore.Brokages.Fake
         {
             
         }
-        
-
+        public void Initialize()
+        {
+            
+        }
         public override void Connect()
         {
             _connected = true;

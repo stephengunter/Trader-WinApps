@@ -13,6 +13,7 @@ namespace ApplicationCore.Receiver
 		void Connect();
 		void DisConnect();
 
+
 		void RequestQuotes(IEnumerable<string> symbolCodes);
 
 		event EventHandler ExceptionHappend;

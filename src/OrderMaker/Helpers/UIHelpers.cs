@@ -15,5 +15,7 @@ namespace OrderMaker.Helpers
 
         public static Label CreateLabel(string text, Color color, DockStyle dock, ContentAlignment textAlign = ContentAlignment.MiddleLeft)
             => new Label() { Text = text, ForeColor = color, Dock = dock, TextAlign = textAlign };
+
+        
     }
 }

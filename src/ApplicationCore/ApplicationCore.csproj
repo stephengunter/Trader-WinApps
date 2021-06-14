@@ -50,6 +50,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Transactions" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -66,7 +67,6 @@
     <Compile Include="Brokages\Capital\Helpers.cs" />
     <Compile Include="Brokages\Concord\ConcordBrokage.cs" />
     <Compile Include="Brokages\Concord\ConcordBrokage.OrderMaker.cs" />
-    <Compile Include="Brokages\Concord\ConcordBrokage.Receiver.cs" />
     <Compile Include="Brokages\Fake\FakeBrokage.cs" />
     <Compile Include="Brokages\Fake\FakeBrokage.OrderMaker.cs" />
     <Compile Include="Brokages\Fake\FakeBrokage.Receiver.cs" />
@@ -76,7 +76,8 @@
     <Compile Include="EventArgs\ActionEventArgs.cs" />
     <Compile Include="EventArgs\ConnectionStatusEventArgs.cs" />
     <Compile Include="EventArgs\ExceptionEventArgs.cs" />
-    <Compile Include="Exceptions\Receiver\QuoteSource.cs" />
+    <Compile Include="Exceptions\OrderMaker.cs" />
+    <Compile Include="Exceptions\QuoteSource.cs" />
     <Compile Include="Helpers\Extensions\CNHelpers.cs" />
     <Compile Include="Helpers\Extensions\CommonHelpers.cs" />
     <Compile Include="Helpers\Extensions\DateTimeHelpers.cs" />

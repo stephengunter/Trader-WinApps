@@ -143,6 +143,9 @@
     <Compile Include="UI\Uc_Strategy.Designer.cs">
       <DependentUpon>Uc_Strategy.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Main.resx">
       <DependentUpon>Main.cs</DependentUpon>
     </EmbeddedResource>
@@ -185,6 +188,9 @@
     <EmbeddedResource Include="UI\Uc_Strategy.resx">
       <DependentUpon>Uc_Strategy.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

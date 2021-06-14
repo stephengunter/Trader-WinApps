@@ -31,9 +31,8 @@ namespace OrderMaker.Test
         {
             this.tpTop = new System.Windows.Forms.TableLayoutPanel();
             this.btnEditConfig = new System.Windows.Forms.Button();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.btnLogs = new System.Windows.Forms.Button();
-            this.btnLogout = new System.Windows.Forms.Button();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.tpTop.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -64,14 +63,6 @@ namespace OrderMaker.Test
             this.btnEditConfig.Text = "設定";
             this.btnEditConfig.Click += new System.EventHandler(this.OnEditConfig);
             // 
-            // panel1
-            // 
-            this.panel1.BackColor = System.Drawing.SystemColors.Control;
-            this.panel1.Location = new System.Drawing.Point(0, 48);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(800, 100);
-            this.panel1.TabIndex = 0;
-            // 
             // btnLogs
             // 
             this.btnLogs.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -83,16 +74,13 @@ namespace OrderMaker.Test
             this.btnLogs.UseVisualStyleBackColor = true;
             this.btnLogs.Click += new System.EventHandler(this.btnLogs_Click);
             // 
-            // btnLogout
+            // panel1
             // 
-            this.btnLogout.Location = new System.Drawing.Point(0, 155);
-            this.btnLogout.Name = "btnLogout";
-            this.btnLogout.Size = new System.Drawing.Size(75, 23);
-            this.btnLogout.TabIndex = 2;
-            this.btnLogout.Text = "登出";
-            this.btnLogout.UseVisualStyleBackColor = true;
-            this.btnLogout.Click += new System.EventHandler(this.btnLogout_Click);
-
+            this.panel1.BackColor = System.Drawing.SystemColors.Control;
+            this.panel1.Location = new System.Drawing.Point(0, 48);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(800, 100);
+            this.panel1.TabIndex = 0;
             // 
             // BasicTestForm
             // 
@@ -100,7 +88,6 @@ namespace OrderMaker.Test
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.btnLogout);
             this.Controls.Add(this.tpTop);
             this.Controls.Add(this.panel1);
             this.Name = "BasicTestForm";
@@ -120,6 +107,5 @@ namespace OrderMaker.Test
         private OrderMaker.UI.EditConfig editConfig;
         private System.Windows.Forms.Button btnEditConfig;
         private System.Windows.Forms.Button btnLogs;
-        private System.Windows.Forms.Button btnLogout;
     }
 }

@@ -40,6 +40,8 @@ namespace OrderMaker
             else if (mode.EqualTo("ApiTest")) Application.Run(new APITestForm());
             else if (mode.EqualTo("StrategyTest")) Application.Run(new StrategyTestForm());
             else Application.Run(new Main());
+
+
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)

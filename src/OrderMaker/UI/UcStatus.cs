@@ -106,9 +106,6 @@ namespace OrderMaker.UI
 			}
 
 		}
-
-
-
 		private void timerDisplay_Tick(object sender, EventArgs e)
 		{
 			//顯示時間

@@ -31,6 +31,11 @@ namespace ApplicationCore.Brokages.Capital
             Login();
         }
 
+        public void Initialize()
+        {
+
+        }
+
         string SID => BrokageSettings.SID.ToUpper();
         string Password => BrokageSettings.Password;
 
@@ -59,7 +64,7 @@ namespace ApplicationCore.Brokages.Capital
             OnActionExecuted("SKQuoteLib_LeaveMonitor", code);
 
         }
-        public bool Login()
+        bool Login()
         {
             int code = _SKCenterLib.SKCenterLib_LoginSetQuote(SID, Password, "Y");
 
