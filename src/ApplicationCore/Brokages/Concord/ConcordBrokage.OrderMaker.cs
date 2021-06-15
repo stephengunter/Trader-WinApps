@@ -18,7 +18,41 @@ namespace ApplicationCore.Brokages.Concord
     {
         private const string _BHNO = "000";
 
-        
+        public override int GetAccountPositions(string account, string symbol)
+        {
+            //925 - 無符合之資料
+            string code = _API.FQueryPosition(_BHNO, account, "", "", "3", out string msg);
+            OnActionExecuted("GetAccountPositions", code, msg);
+
+            if (code == "925") return 0;
+
+            symbol = GetSymbolCode(symbol);
+
+            if (code == "000")
+            {
+                int total = 0;
+
+                foreach (string row in msg.Split((Char)0x0a))
+                {
+                    var result = row.Split(',');
+                    string BS = result[9];
+                    string symb = result[11];
+                    int qty = result[15].ToInt();
+
+                    if (symb == symbol)
+                    {
+                        if (BS.ToUpper() == "B") total += qty;
+                        else total -= qty;
+                    }
+
+                }
+
+                return total;
+            }
+
+            throw new Exception("GetAccountPositions Error.");
+
+        }
         FOrderNew InitOrder(string symbol, string account, decimal price, int lots, bool dayTrade)
         {
             //大台 TXF 小台 MXF
@@ -71,7 +105,11 @@ namespace ApplicationCore.Brokages.Concord
 
                 AddAccount(accountModel);
             }
-            
+
+            var accNumbers = AccountList.Select(x => x.Number);
+            OnActionExecuted("LoadAccounts", "", accNumbers.JoinToString());
+
+
         }
         public override void MakeOrder(string symbol, string account, decimal price, int lots, bool dayTrade)
         {

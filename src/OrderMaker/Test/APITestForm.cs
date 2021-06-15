@@ -16,15 +16,19 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using AutoMapper;
 using ApplicationCore;
+using ApplicationCore.Managers;
+using System.Threading;
 
 namespace OrderMaker.Test
 {
     public partial class APITestForm : Form
     {
         private IMapper _mapper = MappingConfig.CreateConfiguration().CreateMapper();
-        private static readonly NLog.ILogger _logger = LogManager.GetCurrentClassLogger();
-        private ISettingsManager _settingsManager;
+        private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
+        private ISettingsManager _settingsManager = Factories.CreateSettingsManager();
         private IOrderMaker _orderMaker;
+
+        private bool _closed = false;
 
         #region  Helper
         List<TradeSettings> TradeSettings => _settingsManager.TradeSettings;
@@ -36,45 +40,114 @@ namespace OrderMaker.Test
 
         public APITestForm()
         {
-            _settingsManager = Factories.CreateSettingsManager();
+            InitializeComponent();
 
+            CreateOrderMaker();
+        }
+        void CreateOrderMaker()
+        {
             string name = _settingsManager.GetSettingValue(AppSettingsKey.OrderMaker);
 
             _orderMaker = Factories.CreateOrderMaker(name, _settingsManager.BrokageSettings);
-            _orderMaker.Ready += this.OnOrderMakerReady;
-            _orderMaker.ActionExecuted += this.OnActionExcuted;
-            if (_orderMaker.Name == BrokageName.HUA_NAN)
-            {
-                _orderMaker.AccountPositionUpdated += OrderMaker_AccountPositionUpdated;
-            }
 
-            InitializeComponent();
+            _orderMaker.Ready += OnOrderMakerReady;
+            _orderMaker.ConnectionStatusChanged += OnConnectionStatusChanged;
+            _orderMaker.ExceptionHappend += OnExceptionHappend;
+            _orderMaker.ActionExecuted += OnActionExecuted;
+
         }
-
         private void API_TestForm_Load(object sender, EventArgs e)
         {
-
-            if (_orderMaker.Connectted) this.OnOrderMakerReady(null, null);
-            else _orderMaker.Connect();
+            _orderMaker.Connect();
         }
 
+        private void OnConnectionStatusChanged(object sender, EventArgs e)
+        {
+            if (_closed) return;
+
+            try
+            {
+                var args = e as ConnectionStatusEventArgs;
+                _logger.Info($"ConnectionStatusChanged: {args.Status}");
+
+
+                if (args.Status == ConnectionStatus.DISCONNECTED)
+                {
+                    _orderMaker.DisConnect();
+                    ThreadHelpers.SetTimeout(() =>
+                    {
+                        _orderMaker.Connect();
+                    }, 3000, this);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+
+            }
+        }
         private void OnOrderMakerReady(object sender, EventArgs e)
         {
             _logger.Info($"OrderMakerReady. Provider: {_orderMaker.Name}");
 
-            InitUI();
-
             LoadAccounts();
         }
-
-        void InitUI()
+        private void OnActionExecuted(object sender, EventArgs e)
         {
+            try
+            {
+                var args = e as ActionEventArgs;
+                _logger.Info($"Action: {args.Action}, Code: {args.Code}, Msg: {args.Msg}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+            }
+        }
+        private void OnExceptionHappend(object sender, EventArgs e)
+        {
+            try
+            {
+                var args = e as ExceptionEventArgs;
+                _logger.Error(args.Exception);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
 
+            }
         }
 
 
         void LoadAccounts()
         {
+            bool error = false;
+            var brokerAccounts = _orderMaker.AccountList;
+            if (brokerAccounts.IsNullOrEmpty())
+            {
+                error = true;
+                MessageBox.Show($"API查無期貨帳號可下單");
+            }
+            else
+            {
+                foreach (var item in TradeSettings)
+                {
+                    foreach (var acc in item.Accounts)
+                    {
+                        var exist = brokerAccounts.FirstOrDefault(x => x.Number == acc.Account);
+                        if (exist == null)
+                        {
+                            error = true;
+                            MessageBox.Show($"API查無期貨帳號: {acc.Account}");
+                        }
+                    }
+                }
+            }
+
+            if (error) return;
+
             _accounts = new List<AccountViewModel>();
             foreach (var item in TradeSettings)
             {
@@ -201,5 +274,13 @@ namespace OrderMaker.Test
 
         private void btnSell_Click(object sender, EventArgs e) => MakeOrder(false);
 
+        private void APITestForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _closed = true;
+
+            if (_orderMaker != null) _orderMaker.DisConnect();
+
+            Thread.Sleep(1500);
+        }
     }
 }

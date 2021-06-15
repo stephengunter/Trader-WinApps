@@ -20,7 +20,7 @@ namespace ApplicationCore.Brokages
 
         protected BrokageSettings BrokageSettings => _settings;
 
-        protected ConnectionStatus ConnectionStatus => _connectionStatus;
+        public ConnectionStatus ConnectionStatus => _connectionStatus;
         public virtual bool Connectted => false;
         protected void SetConnectionStatus(ConnectionStatus status)
         {
@@ -40,11 +40,8 @@ namespace ApplicationCore.Brokages
         private bool _ready = false;
         protected void SetReady(bool val)
         {
-            if (val != _ready)
-            {
-                _ready = val;
-                if (_ready) OnReady();
-            }
+            if (val) OnReady();
+            _ready = val;
         }
 
         public event EventHandler Ready;

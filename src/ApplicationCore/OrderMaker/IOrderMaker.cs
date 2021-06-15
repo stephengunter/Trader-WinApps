@@ -22,6 +22,9 @@ namespace ApplicationCore.OrderMaker
 
 
         BrokageName Name { get; }
+
+        List<AccountViewModel> AccountList { get; }
+        ConnectionStatus ConnectionStatus { get; }
         bool Connectted { get; }
 
         void Connect();

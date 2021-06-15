@@ -26,7 +26,6 @@ namespace OrderMaker.UI
         private readonly ILogger _logger;
 
         private TradeSettings _tradeSettings;
-        private PositionFile _positionFile;
         private IPositionManager _positionManager;
 
 
@@ -37,30 +36,33 @@ namespace OrderMaker.UI
         PositionEdit _positionEditForm;
 
 
-        void RenderPositionInfo()
+        void RenderPositionInfo(PositionFile positionFile)
         {
-            lblPosition.Text = _positionFile.Position.ToString();
-            if (_positionFile.Position > 0) lblPosition.ForeColor = Color.Red;
-            else if (_positionFile.Position == 0) lblPosition.ForeColor = Color.Black;
+            lblPosition.Text = positionFile.Position.ToString();
+            if (positionFile.Position > 0) lblPosition.ForeColor = Color.Red;
+            else if (positionFile.Position == 0) lblPosition.ForeColor = Color.Black;
             else lblPosition.ForeColor = Color.Green;
 
 
-            lblTime.Text = $"({_positionFile.Time.ToTimeString()})";
+            lblTime.Text = $"({positionFile.Time.ToTimeString()})";
+
+            
+            _logger.Info($"PositionInfo: {positionFile.Position}, {positionFile.MarketPrice}");
         }
         #endregion
 
 
         public Uc_Strategy(IOrderMaker orderMaker, TradeSettings settings, ITimeManager timeManager, ILogger logger)
         {
-            this._orderMaker = orderMaker;
-            this._tradeSettings = settings;
-            this._timeManager = timeManager;
-            this._logger = logger;
+            _orderMaker = orderMaker;
+            _tradeSettings = settings;
+            _timeManager = timeManager;
+            _logger = logger;
 
             InitializeComponent();
 
             if (!File.Exists(_tradeSettings.FileName)) File.Create(_tradeSettings.FileName).Close();
-            _positionFile = new PositionFile();
+           
             _positionManager = Factories.CreatePositionManager(_orderMaker, _tradeSettings, logger);
 
             this.timer.Interval = _tradeSettings.Interval;
@@ -125,12 +127,15 @@ namespace OrderMaker.UI
             try
             {
                 var file = ReadPositionFile();
-                if (file == null) return;
+                if (file == null) _logger.Info("PositionInfo: null");
+                else
+                {
+                    _positionManager.SyncPosition(file);
 
-                _positionManager.SyncPosition(file);
+                    RenderPositionInfo(file);
+                }
 
-                this._positionFile = file;
-                RenderPositionInfo();
+                
             }
             catch (Exception ex)
             {

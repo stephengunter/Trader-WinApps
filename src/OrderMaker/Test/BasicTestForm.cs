@@ -28,8 +28,6 @@ namespace OrderMaker.Test
         private bool _closed = false;
         public BasicTestForm()
         {
-            _settingsManager = Factories.CreateSettingsManager();
-
             this._timeManager = Factories.CreateTimeManager(_settingsManager.GetSettingValue(AppSettingsKey.Begin),
                 _settingsManager.GetSettingValue(AppSettingsKey.End));
 
@@ -74,12 +72,8 @@ namespace OrderMaker.Test
         #region Form Event Handlers
         private void BasicTestForm_Load(object sender, EventArgs e)
         {
-            if (_orderMaker != null)
-            {
-                if (_orderMaker.Connectted) this.OnOrderMakerReady(null, null);
-                else _orderMaker.Connect();
-            }
-            
+            _orderMaker.Connect();
+
         }
         #endregion
 
@@ -93,8 +87,7 @@ namespace OrderMaker.Test
                 var args = e as ConnectionStatusEventArgs;
                 _logger.Info($"ConnectionStatusChanged: {args.Status}");
 
-                if (ucStatus == null) return;
-                if (args.Status != ConnectionStatus.CONNECTING) ucStatus.CheckConnect();
+                if (ucStatus != null) ucStatus.CheckConnect();
 
             }
             catch (Exception ex)
@@ -166,7 +159,7 @@ namespace OrderMaker.Test
         }
         void InitStatusUI()
         {
-            this.ucStatus = new UcStatus(_settingsManager, _timeManager, _orderMaker, _logger);
+            this.ucStatus = new UcStatus(this, _settingsManager, _timeManager, _orderMaker, _logger);
             this.panel1.Controls.Add(this.ucStatus);
         }
 

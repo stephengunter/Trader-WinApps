@@ -1,4 +1,6 @@
-﻿using ApplicationCore.Managers;
+﻿using ApplicationCore;
+using ApplicationCore.Helpers;
+using ApplicationCore.Managers;
 using ApplicationCore.OrderMaker;
 using NLog;
 using System;
@@ -20,6 +22,7 @@ namespace OrderMaker.UI
 		private readonly ITimeManager _timeManager;
 		private readonly ILogger _logger;
 		private IOrderMaker _orderMaker;
+		private Form _form;
 
 		#region  UI
 		Label labelOpenTime = new Label();
@@ -36,12 +39,13 @@ namespace OrderMaker.UI
 		#endregion
 
 
-		public UcStatus(ISettingsManager settingsManager, ITimeManager timeManager, IOrderMaker orderMaker, ILogger logger)
+		public UcStatus(Form form,ISettingsManager settingsManager, ITimeManager timeManager, IOrderMaker orderMaker, ILogger logger)
 		{
-			this._settingsManager = settingsManager;
-			this._timeManager = timeManager;
-			this._orderMaker = orderMaker;
-			this._logger = logger;
+			_form = form;
+			_settingsManager = settingsManager;
+			_timeManager = timeManager;
+			_orderMaker = orderMaker;
+			_logger = logger;
 
 			InitializeComponent();
 
@@ -94,15 +98,19 @@ namespace OrderMaker.UI
 
 		public void CheckConnect()
 		{
+			if (_orderMaker.ConnectionStatus == ConnectionStatus.CONNECTING) return;
+
 			bool connectted = _orderMaker.Connectted;
 			RenderConnectted(connectted);
-
 
 			if (!connectted)
 			{
 				_orderMaker.DisConnect();
-				Thread.Sleep(3000);
-				_orderMaker.Connect();
+				ThreadHelpers.SetTimeout(() =>
+				{
+					_orderMaker.Connect();
+				}, 3000, _form);
+				
 			}
 
 		}

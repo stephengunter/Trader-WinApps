@@ -89,6 +89,7 @@
     <Compile Include="Helpers\Extensions\NLogger.cs" />
     <Compile Include="Helpers\Extensions\RandomHelper.cs" />
     <Compile Include="Helpers\Extensions\SIDHelper.cs" />
+    <Compile Include="Helpers\Thread.cs" />
     <Compile Include="Managers\SettingsManager.cs" />
     <Compile Include="Managers\TimeManager.cs" />
     <Compile Include="OrderMaker\BaseOrderMaker.cs" />

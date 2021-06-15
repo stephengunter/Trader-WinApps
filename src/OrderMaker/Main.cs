@@ -25,12 +25,12 @@ namespace OrderMaker
     public partial class Main : Form
     {
         private IMapper _mapper = MappingConfig.CreateConfiguration().CreateMapper();
-        private static readonly NLog.ILogger _logger = LogManager.GetCurrentClassLogger();
-        private ISettingsManager _settingsManager;
+        private static readonly ILogger _logger = LogManager.GetCurrentClassLogger();
+        private ISettingsManager _settingsManager = Factories.CreateSettingsManager();
         private ITimeManager _timeManager;
         private IOrderMaker _orderMaker;
 
-        bool _closed = false;
+        private bool _closed = false;
 
         #region  Helper
         bool _basicSettingOK = false;
@@ -48,41 +48,46 @@ namespace OrderMaker
 
         public Main()
         {
-            _settingsManager = Factories.CreateSettingsManager();
-
             this._timeManager = Factories.CreateTimeManager(_settingsManager.GetSettingValue(AppSettingsKey.Begin),
-                _settingsManager.GetSettingValue(AppSettingsKey.End));
-
+                 _settingsManager.GetSettingValue(AppSettingsKey.End));
+            
             InitializeComponent();
 
             CheckBasicSettings();
-            InitBasicUI();
-            if (!_basicSettingOK)
+            if (_basicSettingOK)
+            {
+                CreateOrderMaker();
+            }
+            else
             {
                 OnEditConfig(null, null);
-                return;
             }
 
-            InitOrderMaker();
+            InitBasicUI();
+            InitStatusUI();
 
-            if (!HasTradeSettings) this.tpStrategy.Controls.Add(UIHelpers.CreateLabel("您還沒有設定策略. 請先設定策略才可同步下單.", Color.Red, DockStyle.Fill), 0, 0);
-            else this.tpStrategy.Controls.Add(UIHelpers.CreateLabel("策略設定", Color.Black, DockStyle.Fill), 0, 0);
-
-            InitStrategyUI();
+            if (HasTradeSettings)
+            {
+                this.tpStrategy.Controls.Add(UIHelpers.CreateLabel("策略設定", Color.Black, DockStyle.Fill), 0, 0);               
+            }
+            else
+            {
+                this.tpStrategy.Controls.Add(UIHelpers.CreateLabel("您還沒有設定策略. 請先設定策略才可同步下單.", Color.Red, DockStyle.Fill), 0, 0);
+            }
         }
 
 
 
-        void InitOrderMaker()
+        void CreateOrderMaker()
         {
             string name = _settingsManager.GetSettingValue(AppSettingsKey.OrderMaker);
 
             _orderMaker = Factories.CreateOrderMaker(name, _settingsManager.BrokageSettings);
 
             _orderMaker.Ready += OnOrderMakerReady;
-            _orderMaker.ConnectionStatusChanged += OrderMaker_ConnectionStatusChanged;
-            _orderMaker.ExceptionHappend += OnOrderMakerExceptionHappend;
-            _orderMaker.ActionExecuted += OrderMaker_ActionExecuted;
+            _orderMaker.ConnectionStatusChanged += OnConnectionStatusChanged;
+            _orderMaker.ExceptionHappend += OnExceptionHappend;
+            _orderMaker.ActionExecuted += OnActionExecuted;
 
         }
 
@@ -90,14 +95,40 @@ namespace OrderMaker
         private void OnOrderMakerReady(object sender, EventArgs e)
         {
             _logger.Info($"OrderMakerReady. Provider: {_orderMaker.Name}");
+
+            bool error = false;
+            var brokerAccounts = _orderMaker.AccountList;
+            if (brokerAccounts.IsNullOrEmpty())
+            {
+                error = true;
+                MessageBox.Show($"API查無期貨帳號可下單");
+            }
+            else
+            {
+                foreach (var item in TradeSettings)
+                {
+                    foreach (var acc in item.Accounts)
+                    {
+                        var exist = brokerAccounts.FirstOrDefault(x => x.Number == acc.Account);
+                        if (exist == null)
+                        {
+                            error = true;
+                            MessageBox.Show($"API查無期貨帳號: {acc.Account}");
+                        }
+                    }
+                }
+            }
+
+            if (error) return;
+
+            InitStrategyUI();
         }
-        private void OnOrderMakerExceptionHappend(object sender, EventArgs e)
+        private void OnExceptionHappend(object sender, EventArgs e)
         {
             try
             {
                 var args = e as ExceptionEventArgs;
                 _logger.Error(args.Exception);
-
             }
             catch (Exception ex)
             {
@@ -105,32 +136,28 @@ namespace OrderMaker
 
             }
         }
-        private void OrderMaker_ActionExecuted(object sender, EventArgs e)
+        private void OnActionExecuted(object sender, EventArgs e)
         {
             try
             {
                 var args = e as ActionEventArgs;
-                if (String.IsNullOrEmpty(args.Action)) _logger.Info($"{args.Code} - {args.Msg}");
-                else _logger.Info($"{args.Action} - {args.Code} - {args.Msg}");
+                _logger.Info($"Action: {args.Action}, Code: {args.Code}, Msg: {args.Msg}");
             }
             catch (Exception ex)
             {
                 _logger.Error(ex);
-
             }
-
-
         }
-        private void OrderMaker_ConnectionStatusChanged(object sender, EventArgs e)
+        private void OnConnectionStatusChanged(object sender, EventArgs e)
         {
             if (_closed) return;
 
             try
             {
-
-                if (ucStatus == null) return;
                 var args = e as ConnectionStatusEventArgs;
-                if (args.Status != ConnectionStatus.CONNECTING) ucStatus.CheckConnect();
+                _logger.Info($"ConnectionStatusChanged: {args.Status}");
+
+                if (ucStatus != null) ucStatus.CheckConnect();
 
             }
             catch (Exception ex)
@@ -144,9 +171,8 @@ namespace OrderMaker
         #region Event Handlers
         private void Main_Load(object sender, EventArgs e)
         {
-            if (_orderMaker != null)
+            if (HasTradeSettings)
             {
-                InitStatusUI();
                 _orderMaker.Connect();
             }
         }
@@ -160,10 +186,6 @@ namespace OrderMaker
             Thread.Sleep(1500);
         }
 
-        private void btnLogout_Click(object sender, EventArgs e)
-        {
-            if (_orderMaker != null) _orderMaker.DisConnect();
-        }
 
         private void OnEditConfig(object sender, EventArgs e)
         {
@@ -264,12 +286,17 @@ namespace OrderMaker
         }
         void InitStatusUI()
         {
-            this.ucStatus = new UcStatus(_settingsManager, _timeManager, _orderMaker, _logger);
+            this.ucStatus = new UcStatus(this, _settingsManager, _timeManager, _orderMaker, _logger);
             this.panel1.Controls.Add(this.ucStatus);
         }
         void InitStrategyUI()
         {
+            if (!HasTradeSettings) return;
+
             this._uc_StrategyList = new List<Uc_Strategy>();
+            this.fpanelStrategies.Height = 1;
+            this.fpanelStrategies.Controls.Clear();
+
             for (int i = 0; i < TradeSettings.Count; i++)
             {
                 var uc_Strategy = new Uc_Strategy(_orderMaker, _settingsManager.FindTradeSettings(TradeSettings[i].Id), _timeManager, _logger);
@@ -284,8 +311,6 @@ namespace OrderMaker
                 this.fpanelStrategies.Controls.Add(uc_Strategy);
                 fpanelStrategies.Controls.SetChildIndex(uc_Strategy, 0);
             }
-
-
         }
 
         void OnSettinsChanged()

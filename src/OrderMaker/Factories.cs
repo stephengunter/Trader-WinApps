@@ -18,7 +18,9 @@ namespace OrderMaker
         public static ITimeManager CreateTimeManager(string begin, string end) => new TimeManager(begin, end);
         public static IPositionManager CreatePositionManager(IOrderMaker orderMaker, TradeSettings tradeSettings, ILogger logger)
         {
-            return new PositionManager(orderMaker, tradeSettings, logger);
+            if (orderMaker.Name == BrokageName.HUA_NAN) return new AsyncPositionManager(orderMaker, tradeSettings, logger);
+            
+            return new SyncPositionManager(orderMaker, tradeSettings, logger);
         }
         public static IOrderMaker CreateOrderMaker(string name, BrokageSettings settings)
         {

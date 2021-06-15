@@ -30,6 +30,7 @@ namespace OrderMaker.Test
         private void InitializeComponent()
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.btnSell = new System.Windows.Forms.Button();
             this.lblSymbol = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -40,7 +41,6 @@ namespace OrderMaker.Test
             this.btnRefresh = new System.Windows.Forms.Button();
             this.lblOI = new System.Windows.Forms.Label();
             this.btnBuy = new System.Windows.Forms.Button();
-            this.btnSell = new System.Windows.Forms.Button();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -73,6 +73,19 @@ namespace OrderMaker.Test
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(800, 100);
             this.tableLayoutPanel1.TabIndex = 0;
+            // 
+            // btnSell
+            // 
+            this.btnSell.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnSell.BackColor = System.Drawing.Color.Green;
+            this.btnSell.ForeColor = System.Drawing.Color.White;
+            this.btnSell.Location = new System.Drawing.Point(273, 63);
+            this.btnSell.Name = "btnSell";
+            this.btnSell.Size = new System.Drawing.Size(74, 23);
+            this.btnSell.TabIndex = 12;
+            this.btnSell.Text = "賣出";
+            this.btnSell.UseVisualStyleBackColor = false;
+            this.btnSell.Click += new System.EventHandler(this.btnSell_Click);
             // 
             // lblSymbol
             // 
@@ -175,27 +188,15 @@ namespace OrderMaker.Test
             this.btnBuy.UseVisualStyleBackColor = false;
             this.btnBuy.Click += new System.EventHandler(this.btnBuy_Click);
             // 
-            // btnSell
-            // 
-            this.btnSell.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.btnSell.BackColor = System.Drawing.Color.Green;
-            this.btnSell.ForeColor = System.Drawing.Color.White;
-            this.btnSell.Location = new System.Drawing.Point(273, 63);
-            this.btnSell.Name = "btnSell";
-            this.btnSell.Size = new System.Drawing.Size(74, 23);
-            this.btnSell.TabIndex = 12;
-            this.btnSell.Text = "賣出";
-            this.btnSell.UseVisualStyleBackColor = false;
-            this.btnSell.Click += new System.EventHandler(this.btnSell_Click);
-            // 
-            // API_TestForm
+            // APITestForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Name = "API_TestForm";
+            this.Name = "APITestForm";
             this.Text = "API_Test";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.APITestForm_FormClosing);
             this.Load += new System.EventHandler(this.API_TestForm_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();

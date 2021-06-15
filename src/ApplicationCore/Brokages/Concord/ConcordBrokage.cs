@@ -60,6 +60,8 @@ namespace ApplicationCore.Brokages.Concord
 
         public override void DisConnect() => Logout();
 
+        
+
         void Login()
         {
             SetConnectionStatus(ConnectionStatus.CONNECTING);
@@ -87,16 +89,20 @@ namespace ApplicationCore.Brokages.Concord
         {
             if (code == LOGIN_SUCCESS)
             {
+                if (ConnectionStatus == ConnectionStatus.CONNECTED) return;
+
                 SetConnectionStatus(ConnectionStatus.CONNECTED);
                 Initialize();
                 
             }
-            else if (code == ACCESS_FAIL || code == NOT_LOGIN) // 201 登入主機無法連線 202 尚未登入
+            else if (code == ACCESS_FAIL || code == NOT_LOGIN)
             {
+                if (ConnectionStatus == ConnectionStatus.DISCONNECTED) return;
                 SetConnectionStatus(ConnectionStatus.DISCONNECTED);
             }
-            else if (code == CONNECTION_LOST || code == LOGIN_FAILED) // 下單連線中斷 , 登入驗證失敗
+            else if (code == CONNECTION_LOST || code == LOGIN_FAILED | code == ORDER_CONNECT_END)
             {
+                if (ConnectionStatus == ConnectionStatus.DISCONNECTED) return;
                 SetConnectionStatus(ConnectionStatus.DISCONNECTED);
             }
 
@@ -119,7 +125,7 @@ namespace ApplicationCore.Brokages.Concord
         }
         private void API_OnFOrderReport(string strMsgCode, string strMsg)
         {
-            OnActionExecuted(new ActionEventArgs("FOrderRepor", strMsgCode, strMsg));
+            OnActionExecuted(new ActionEventArgs("FOrderReport", strMsgCode, strMsg));
         }
         #endregion
     }

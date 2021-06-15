@@ -13,7 +13,7 @@ namespace ApplicationCore.OrderMaker
     {
         public BaseOrderMaker(BrokageName name, BrokageSettings settings):base(name, settings)
         {
-           
+            InitYearMonth();
         }
 
         public event EventHandler AccountPositionUpdated;
@@ -22,7 +22,10 @@ namespace ApplicationCore.OrderMaker
             AccountPositionUpdated?.Invoke(this, e);
         }
 
-        List<AccountViewModel> _accounts = new List<AccountViewModel>();
+        public List<AccountViewModel> AccountList => _accounts;
+
+
+        List <AccountViewModel> _accounts = new List<AccountViewModel>();
         protected void AddAccount(AccountViewModel account)
         {
             if (FindAccountByNumber(account.Number) == null) _accounts.Add(account);

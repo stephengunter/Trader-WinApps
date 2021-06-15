@@ -15,59 +15,27 @@ namespace ApplicationCore.OrderMaker.Managers
         void FetchDeals();
     }
 
-
-    public class PositionManager : IPositionManager
+    public abstract class BasePositionManager
     {
         private readonly IOrderMaker _orderMaker;
         private readonly TradeSettings _tradeSettings;
         private readonly NLog.ILogger _logger;
 
-        IPositionInfo _positionInfo = null;
-
-        public PositionManager(IOrderMaker orderMaker, TradeSettings tradeSettings, ILogger logger)
+        public BasePositionManager(IOrderMaker orderMaker, TradeSettings tradeSettings, ILogger logger)
         {
             _orderMaker = orderMaker;
             _tradeSettings = tradeSettings;
             _logger = logger;
-
-            if (_orderMaker.Name == BrokageName.HUA_NAN)
-            {
-                _orderMaker.AccountPositionUpdated += OrderMaker_AccountPositionUpdated;
-            }
         }
 
-        #region  Helper
-        List<AccountSettings> Accounts => _tradeSettings.Accounts;
-        #endregion
+        protected IOrderMaker OrderMaker => _orderMaker;
+        protected TradeSettings TradeSettings => _tradeSettings;
+        protected NLog.ILogger Logger => _logger;
+
+        
 
         #region IPositionManager Functions
-        public void SyncPosition(IPositionInfo positionInfo)
-        {
-            if (positionInfo.MarketPrice <= 0) return;
-
-            if (_orderMaker.Name == BrokageName.HUA_NAN)
-            {
-                _positionInfo = positionInfo;
-
-                InitAccountPositionStatus();
-
-                BeginSync();
-            }
-            else
-            {
-                foreach (var accountSettings in Accounts)
-                {
-                    string symbol = accountSettings.Symbol;
-                    int lotsNeedOrder = GetLotsNeedOrder(positionInfo, accountSettings);
-                    if (lotsNeedOrder != 0)
-                    {
-                        decimal marketPrice = positionInfo.MarketPrice;
-                        bool dayTrade = _tradeSettings.DayTrade;
-                        MakeOrder(symbol, accountSettings.Account, marketPrice, lotsNeedOrder, dayTrade);
-                    }
-                }
-            }
-        }
+        public abstract void SyncPosition(IPositionInfo positionInfo);
 
         public void FetchDeals()
         {
@@ -79,8 +47,71 @@ namespace ApplicationCore.OrderMaker.Managers
         }
         #endregion
 
+        protected void MakeOrder(string symbol, string account, decimal marketPrice, int lots, bool dayTrade)
+        {
+            int offset = _tradeSettings.Offset;
+
+            if (lots > 0) _orderMaker.MakeOrder(symbol, account, marketPrice + offset, lots, dayTrade); //買進
+            else if (lots < 0) _orderMaker.MakeOrder(symbol, account, marketPrice - offset, lots, dayTrade); //賣出
+        }
+
+    }
+
+    public class SyncPositionManager : BasePositionManager, IPositionManager
+    {
+        public SyncPositionManager(IOrderMaker orderMaker, TradeSettings tradeSettings, ILogger logger)
+            : base(orderMaker, tradeSettings, logger)
+        {
+            logger.Info("PositionManager Created. Type:SyncPositionManager");
+        }
+        List<AccountSettings> Accounts => TradeSettings.Accounts;
+        public override void SyncPosition(IPositionInfo positionInfo)
+        {
+            foreach (var accountSettings in Accounts)
+            {
+                string symbol = accountSettings.Symbol;
+                string accNum = accountSettings.Account;
+
+                int currentLots = OrderMaker.GetAccountPositions(accNum, symbol);
+                int correctLots = positionInfo.Position * accountSettings.Lot;
+
+                int lotsNeedOrder = correctLots - currentLots;
+                if (lotsNeedOrder != 0)
+                {
+                    decimal marketPrice = positionInfo.MarketPrice;
+                    bool dayTrade = TradeSettings.DayTrade;
+                    MakeOrder(symbol, accNum, marketPrice, lotsNeedOrder, dayTrade);
+                }
+
+                Logger.Info($"SyncPosition: {positionInfo.Position}({positionInfo.MarketPrice}), Account:{accNum} ({symbol}, {accountSettings.Lot}), OI: {currentLots}, Need: {lotsNeedOrder}");
+            }
+        }
+    }
+
+    public class AsyncPositionManager : BasePositionManager, IPositionManager
+    {
+        IPositionInfo _positionInfo = null;
+        public AsyncPositionManager(IOrderMaker orderMaker, TradeSettings tradeSettings, ILogger logger)
+            :base(orderMaker, tradeSettings, logger)
+        {
+
+            OrderMaker.AccountPositionUpdated += OrderMaker_AccountPositionUpdated;
+            logger.Info("PositionManager Created. Type:SyncPositionManager");
+        }
+
+        public override void SyncPosition(IPositionInfo positionInfo)
+        {
+            if (positionInfo.MarketPrice <= 0) return;
+
+            _positionInfo = positionInfo;
+
+            InitAccountPositionStatus();
+
+            BeginSync();
+        }
         private void OrderMaker_AccountPositionUpdated(object sender, EventArgs e)
         {
+
             try
             {
                 var args = e as AccountEventArgs;
@@ -88,44 +119,27 @@ namespace ApplicationCore.OrderMaker.Managers
             }
             catch (Exception ex)
             {
-                _logger.Error(ex);
+                Logger.Error(ex);
 
             }
         }
-
-        List<AccountPositionStatus> _accountPositionStatuses = new List<AccountPositionStatus>();
-        void InitAccountPositionStatus()
-        {
-            _accountPositionStatuses = new List<AccountPositionStatus>();
-            foreach (var accountSettings in _tradeSettings.Accounts)
-            {
-                _accountPositionStatuses.Add(new AccountPositionStatus { Id = accountSettings.Account, Sync = false });
-            }
-        }
-        void BeginSync()
-        {
-            var accountStatus = _accountPositionStatuses.FirstOrDefault(x => !x.Sync);
-            if (accountStatus == null) return;
-
-            _orderMaker.RequestAccountPositions(accountStatus.Id);
-
-        }
-
-
-
-
-
         void SyncPosition(string account)
         {
             if (_positionInfo == null) return;
-            var accountSettings = _tradeSettings.FindAccountSettings(account);
+            var accountSettings = TradeSettings.FindAccountSettings(account);
             if (accountSettings == null) return;
 
             string symbol = accountSettings.Symbol;
-            int lotsNeedOrder = GetLotsNeedOrder(_positionInfo, accountSettings);
+
+            int currentLots = OrderMaker.GetAccountPositions(account, symbol);
+            int correctLots = _positionInfo.Position * accountSettings.Lot;
+
+            int lotsNeedOrder = correctLots - currentLots;
+            Logger.Info($"SyncPosition: {_positionInfo.Position}({_positionInfo.MarketPrice}), Account:{account} ({symbol}, {accountSettings.Lot}), OI: {currentLots}, Need: {lotsNeedOrder}");
+
             if (lotsNeedOrder == 0)
             {
-                _orderMaker.ClearOrders(symbol, account);
+                OrderMaker.ClearOrders(symbol, account);
 
                 var accountStatus = _accountPositionStatuses.FirstOrDefault(x => x.Id == account);
                 accountStatus.Sync = true;
@@ -136,47 +150,39 @@ namespace ApplicationCore.OrderMaker.Managers
             {
 
                 decimal marketPrice = _positionInfo.MarketPrice;
-                bool dayTrade = _tradeSettings.DayTrade;
+                bool dayTrade = TradeSettings.DayTrade;
 
                 MakeOrder(symbol, account, marketPrice, lotsNeedOrder, dayTrade);
             }
 
         }
 
-        int GetLotsNeedOrder(IPositionInfo positionInfo, AccountSettings accountSettings)
+        List<AccountPositionStatus> _accountPositionStatuses = new List<AccountPositionStatus>();
+        void InitAccountPositionStatus()
         {
-            string symbol = accountSettings.Symbol;
-            string account = accountSettings.Account;
-
-            int currentLots = _orderMaker.GetAccountPositions(account, symbol);
-
-            int correctLots = positionInfo.Position * accountSettings.Lot;
-
-            return correctLots - currentLots;
+            _accountPositionStatuses = new List<AccountPositionStatus>();
+            foreach (var accountSettings in TradeSettings.Accounts)
+            {
+                _accountPositionStatuses.Add(new AccountPositionStatus { Id = accountSettings.Account, Sync = false });
+            }
         }
-
-        void MakeOrder(string symbol, string account, decimal marketPrice, int lots, bool dayTrade)
+        void BeginSync()
         {
-            int offset = _tradeSettings.Offset;
+            var accountStatus = _accountPositionStatuses.FirstOrDefault(x => !x.Sync);
+            if (accountStatus == null) return;
 
-            if (lots > 0) _orderMaker.MakeOrder(symbol, account, marketPrice + offset, lots, dayTrade); //買進
-            else if (lots < 0) _orderMaker.MakeOrder(symbol, account, marketPrice - offset, lots, dayTrade); //賣出
+            OrderMaker.RequestAccountPositions(accountStatus.Id);
+
         }
-
 
         class AccountPositionStatus
         {
             public string Id { get; set; }
             public bool Sync { get; set; }
         }
-
-        class AccountDealStatus
-        {
-            public string Id { get; set; }
-            public bool Fetched { get; set; }
-        }
-
     }
+
+    
 
 
 
