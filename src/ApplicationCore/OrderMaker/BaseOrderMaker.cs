@@ -54,6 +54,11 @@ namespace ApplicationCore.OrderMaker
             return buyLots - sellLots;
 
         }
+        DateTime GetCashDate(DateTime dateTime)
+        {
+            var cashDate = dateTime.FindThirdWedOfMonth(); //本月結算日
+            return new DateTime(cashDate.Year, cashDate.Month, cashDate.Day, 13, 30, 0);
+        }
 
         string _monthCode = "";
         string _yearCode = "";
@@ -67,13 +72,12 @@ namespace ApplicationCore.OrderMaker
                 { 10, "J" },{ 11, "K" },{ 12, "L" }
             };
 
-            var date = DateTime.Today;
+            var now = DateTime.Now;
+            int year = now.Year;
+            int month = now.Month;
 
-            int year = date.Year;
-            int month = date.Month;
-
-            var cachDay = date.FindThirdWedOfMonth(); //本月結算日
-            if (date > cachDay)
+            var cashDay = GetCashDate(now);
+            if (now > cashDay)
             {
                 month += 1;
                 if (month > 12)
